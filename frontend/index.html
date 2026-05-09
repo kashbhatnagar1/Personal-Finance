@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Personal Finance</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -76,9 +77,58 @@
       </div>
     </div>
 
-    <!-- ── Dashboard Page (placeholder) ── -->
+    <!-- ── Dashboard Page ── -->
     <div id="page-dashboard" class="page hidden">
-      <div class="flex items-center justify-center h-64 text-gray-400 text-sm">Dashboard — coming soon</div>
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h1 class="text-xl font-semibold">Dashboard</h1>
+          <p class="text-sm text-gray-500 mt-0.5">Monthly overview</p>
+        </div>
+        <input type="month" id="dash-month-picker"
+          class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+      </div>
+
+      <!-- Summary cards -->
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="bg-white border border-gray-200 rounded-xl px-5 py-4">
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Total Spent</p>
+          <p id="dash-total-spent" class="text-2xl font-bold text-gray-800 mt-1">₹0</p>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl px-5 py-4">
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Income</p>
+            <button onclick="toggleIncomeEdit()" class="text-xs text-indigo-500 hover:text-indigo-700 transition">Edit</button>
+          </div>
+          <p id="dash-income" class="text-2xl font-bold text-gray-800 mt-1">₹0</p>
+          <div id="income-edit-form" class="hidden mt-2">
+            <div class="flex gap-2">
+              <input type="number" id="income-input" step="0.01" min="0" placeholder="Enter amount"
+                class="flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              <button onclick="saveIncome()" class="bg-indigo-600 text-white text-xs px-3 py-1 rounded-lg whitespace-nowrap">Save</button>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl px-5 py-4">
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Net Savings</p>
+          <p id="dash-net" class="text-2xl font-bold text-gray-800 mt-1">₹0</p>
+        </div>
+      </div>
+
+      <!-- Chart + Breakdown -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-white border border-gray-200 rounded-xl p-5">
+          <p class="text-sm font-medium text-gray-700 mb-4">Spending by Category</p>
+          <div id="chart-container" class="flex items-center justify-center h-52">
+            <canvas id="category-chart"></canvas>
+          </div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-5">
+          <p class="text-sm font-medium text-gray-700 mb-4">Breakdown</p>
+          <div id="category-breakdown" class="space-y-3">
+            <p class="text-sm text-gray-400 text-center py-8">No expenses this month</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ── Budgets Page (placeholder) ── -->

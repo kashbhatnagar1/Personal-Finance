@@ -22,18 +22,39 @@ const CATEGORY_COLORS = {
   "Other": "bg-gray-100 text-gray-600",
 };
 
+const CHART_COLORS = {
+  "Housing": "#6366f1",
+  "Food & Dining": "#f97316",
+  "Transport": "#eab308",
+  "Health": "#22c55e",
+  "Entertainment": "#a855f7",
+  "Shopping": "#ec4899",
+  "Utilities": "#06b6d4",
+  "Other": "#94a3b8",
+};
+
 let currentMonth = currentMonthString();
 let pendingDeleteId = null;
 let expenses = [];
+let chartInstance = null;
 
 // ── Init ──────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
   const picker = document.getElementById("month-picker");
+  const dashPicker = document.getElementById("dash-month-picker");
   picker.value = currentMonth;
+  dashPicker.value = currentMonth;
+
   picker.addEventListener("change", (e) => {
     currentMonth = e.target.value;
+    dashPicker.value = currentMonth;
     loadExpenses();
+  });
+  dashPicker.addEventListener("change", (e) => {
+    currentMonth = e.target.value;
+    picker.value = currentMonth;
+    loadDashboard();
   });
   showPage("transactions");
 });
@@ -58,6 +79,7 @@ function showPage(name) {
   active.classList.remove("text-gray-600", "hover:bg-gray-100");
 
   if (name === "transactions") loadExpenses();
+  if (name === "dashboard") loadDashboard();
 }
 
 // ── API calls ─────────────────────────────────────────────
@@ -184,6 +206,124 @@ document.getElementById("modal").addEventListener("click", (e) => {
 document.getElementById("delete-modal").addEventListener("click", (e) => {
   if (e.target === e.currentTarget) closeDeleteModal();
 });
+
+// ── Dashboard ─────────────────────────────────────────────
+
+async function loadDashboard() {
+  const [expensesData, incomeData] = await Promise.all([
+    fetch(`${API}/expenses?month=${currentMonth}`).then(r => r.json()),
+    fetch(`${API}/income?month=${currentMonth}`).then(r => r.json()),
+  ]);
+  renderDashboard(expensesData, incomeData);
+}
+
+function renderDashboard(expensesData, incomeData) {
+  const totalSpent = expensesData.reduce((s, e) => s + e.amount, 0);
+  const income = incomeData.amount || 0;
+  const net = income - totalSpent;
+
+  document.getElementById("dash-total-spent").textContent = formatCurrency(totalSpent);
+  document.getElementById("dash-income").textContent = formatCurrency(income);
+
+  const netEl = document.getElementById("dash-net");
+  netEl.textContent = formatCurrency(net);
+  netEl.className = `text-2xl font-bold mt-1 ${net >= 0 ? "text-green-600" : "text-red-500"}`;
+
+  const byCategory = {};
+  for (const e of expensesData) {
+    byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
+  }
+  const sorted = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
+
+  renderDonutChart(sorted, totalSpent);
+  renderCategoryBreakdown(sorted, totalSpent);
+}
+
+function renderDonutChart(sorted, totalSpent) {
+  const container = document.getElementById("chart-container");
+
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+  if (sorted.length === 0) {
+    container.innerHTML = '<p class="text-sm text-gray-400">No data this month</p>';
+    return;
+  }
+
+  container.innerHTML = '<canvas id="category-chart"></canvas>';
+  const ctx = document.getElementById("category-chart").getContext("2d");
+
+  chartInstance = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: sorted.map(([cat]) => cat),
+      datasets: [{
+        data: sorted.map(([, amt]) => amt),
+        backgroundColor: sorted.map(([cat]) => CHART_COLORS[cat] || "#94a3b8"),
+        borderWidth: 2,
+        borderColor: "#fff",
+      }],
+    },
+    options: {
+      cutout: "65%",
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${formatCurrency(ctx.raw)} (${((ctx.raw / totalSpent) * 100).toFixed(1)}%)`,
+          },
+        },
+      },
+    },
+  });
+}
+
+function renderCategoryBreakdown(sorted, totalSpent) {
+  const el = document.getElementById("category-breakdown");
+
+  if (sorted.length === 0) {
+    el.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">No expenses this month</p>';
+    return;
+  }
+
+  el.innerHTML = sorted.map(([cat, amt]) => {
+    const pct = totalSpent > 0 ? (amt / totalSpent) * 100 : 0;
+    const color = CHART_COLORS[cat] || "#94a3b8";
+    return `
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-sm text-gray-700 flex items-center gap-1.5">
+            <span>${CATEGORY_ICONS[cat] || "📦"}</span>
+            <span>${cat}</span>
+          </span>
+          <span class="text-sm font-medium text-gray-800">${formatCurrency(amt)}</span>
+        </div>
+        <div class="h-1.5 bg-gray-100 rounded-full">
+          <div class="h-1.5 rounded-full" style="width:${pct.toFixed(1)}%; background:${color}"></div>
+        </div>
+        <p class="text-xs text-gray-400 mt-0.5 text-right">${pct.toFixed(1)}%</p>
+      </div>
+    `;
+  }).join("");
+}
+
+function toggleIncomeEdit() {
+  const form = document.getElementById("income-edit-form");
+  form.classList.toggle("hidden");
+  if (!form.classList.contains("hidden")) document.getElementById("income-input").focus();
+}
+
+async function saveIncome() {
+  const amount = parseFloat(document.getElementById("income-input").value);
+  if (isNaN(amount) || amount < 0) return;
+  await fetch(`${API}/income`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount, month: currentMonth }),
+  });
+  document.getElementById("income-edit-form").classList.add("hidden");
+  document.getElementById("income-input").value = "";
+  loadDashboard();
+}
 
 // ── Utils ─────────────────────────────────────────────────
 
