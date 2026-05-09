@@ -4,7 +4,7 @@ import sqlite3
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "https://gleeful-pegasus-961f3c.netlify.app"}})
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "finance.db")
 
