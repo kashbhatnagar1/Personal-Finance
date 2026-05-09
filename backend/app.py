@@ -4,7 +4,7 @@ import sqlite3
 import os
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": r"^https://[a-z0-9-]+\.netlify\.app$"}})
+CORS(app, resources={r"/api/*": {"origins": [r"^https://[a-z0-9-]+\.netlify\.app$", "http://127.0.0.1:5500"]}})
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "finance.db")
 
@@ -136,4 +136,6 @@ def upsert_income():
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=True, port=5001)
+    port = int(os.environ.get("PORT", 5001))
+    debug = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(debug=debug, host="0.0.0.0", port=port)
