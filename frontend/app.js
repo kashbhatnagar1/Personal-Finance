@@ -1,4 +1,4 @@
-const API = "https://web-production-401eb.up.railway.app";
+const API = "https://web-production-401eb.up.railway.app/api";
 
 const CATEGORY_ICONS = {
   "Housing": "🏠",
