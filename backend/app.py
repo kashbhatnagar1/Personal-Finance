@@ -2,9 +2,10 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
 import os
+import re
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": [r"^https://[a-z0-9-]+\.netlify\.app$", "http://127.0.0.1:5500"]}})
+CORS(app, resources={r"/api/*": {"origins": [re.compile(r"^https://[a-z0-9-]+\.netlify\.app$"), "http://127.0.0.1:5500"]}})
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "finance.db")
 
