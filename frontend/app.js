@@ -1,4 +1,4 @@
-const API = "http://localhost:5001/api";
+const API = "https://web-production-401eb.up.railway.app";
 
 const CATEGORY_ICONS = {
   "Housing": "🏠",
